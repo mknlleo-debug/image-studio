@@ -4,12 +4,13 @@ function status(t){$('status').textContent=t}
 $('quality').oninput=()=>{$('qualityLabel').textContent=$('quality').value+'%'};
 $('method').onchange=()=>{const ai=$('method').value==='ai';$('scale').disabled=ai;$('strengthWrap').hidden=!ai;if(ai)$('scale').value='2';$('methodNote').textContent=ai?'تكبير متعلّم ×٢. ممكن يخمّن تفاصيل أو يغيّر ملمس الصورة. للأصل حتى ٥ ميجابكسل. المعالجة على أجزاء من غير تصغير الأصل، وقد تستغرق دقائق طويلة. تقدر تلغيها.':'التكبير السريع بيحسّن عرض الصورة الكبيرة بحدة خفيفة، مش بيسترجع تفاصيل مفقودة. الضغط ممكن يقلل بعض التفاصيل.'};
 let selectionVersion=0;
+async function snapshotFile(f){let last;for(let attempt=0;attempt<3;attempt++){try{const b=await f.arrayBuffer();if(b.byteLength)return new Blob([b],{type:f.type||'application/octet-stream'});}catch(e){last=e}await new Promise(r=>setTimeout(r,150*(attempt+1)))}try{const data=await readDataURL(f);return await (await fetch(data)).blob()}catch{}throw Error('مش قادر أقرأ الملف من مكانه. نزّل الصورة بالكامل في Downloads، وبعدها اختار النسخة المحفوظة على الجهاز.');}
+
 function readDataURL(blob){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=()=>reject(Error('تعذر قراءة ملف الصورة من الجهاز. نزّله بالكامل واختاره تاني.'));r.readAsDataURL(blob)})}
 function loadImageURL(url){return new Promise((resolve,reject)=>{const img=new Image();const timer=setTimeout(()=>{img.onload=img.onerror=null;reject(Error('انتهى وقت قراءة الصورة. جرّب اختيارها تاني.'))},30000);img.onload=()=>{clearTimeout(timer);resolve(img)};img.onerror=()=>{clearTimeout(timer);reject(Error('المتصفح ما قدرش يقرأ الصورة دي. جرّب نسخة JPEG أو PNG محفوظة على الجهاز.'))};img.src=url})}
 $('file').onchange=async()=>{const version=++selectionVersion;const f=$('file').files[0];if(!f)return;$('result').hidden=true;$('run').disabled=true;source=null;$('source').textContent='جاري قراءة الصورة...';status('جاري قراءة ملف الصورة من الجهاز...');if(f.size>20*1048576){$('source').textContent='الصورة لسه ما اتاختارتش';status('اختار صورة أصغر من ٢٠ ميجابايت.');return}try{
 // Snapshot the selected file before decoding. Keep URLs local to this selection.
-const buffer=await f.arrayBuffer();if(!buffer.byteLength)throw Error('ملف الصورة فاضي أو لسه ما اتحمّلش بالكامل.');
-const blob=new Blob([buffer],{type:f.type||'application/octet-stream'});let decoded=null;let preview=null;
+const blob=await snapshotFile(f);let decoded=null;let preview=null;
 if(typeof createImageBitmap==='function'){try{decoded=await createImageBitmap(blob)}catch{}}
 if(!decoded){preview=await readDataURL(blob);decoded=await loadImageURL(preview)}
 if(version!==selectionVersion){decoded.close?.();return}
