@@ -20,3 +20,11 @@ Independent detail control blends source-supported high-frequency residuals, usi
 ## Preview and image loading
 The large.html candidate includes a separate before-download viewer with original/result selection, fit-to-screen, 100% actual pixels and 25-200% display zoom. Display zoom does not enlarge the exported file. Fast resize factors are 1, 1.5, 2, 3, 4, 6 and 8, with choices above the 20 MP output cap disabled for the current source. Learned enhancement remains 2x.
 The image loader snapshots selected bytes, uses createImageBitmap with a FileReader/Image.onload fallback, guards stale selections and retries transient file reads. Desktop regression tests passed; the reported Android issue still requires an on-device retry.
+
+
+## Local task recovery
+The most recent source image, selected settings and finished output are stored in IndexedDB on this device. Learned processing saves completed tiles by source-pixel hash. On reopening, the recovery button restores the image and settings without selecting the file again and reuses completed tiles. Resampling and detail blending may run again. This is not a background execution guarantee. Android/Chrome can freeze or discard hidden pages. Screen Wake Lock is requested only while processing and visible, and released after completion or cancellation.
+
+Storage may exceed300MB for large images. Browser data clearing, private browsing, storage eviction and quota exhaustion can remove or block saved work. The delete button removes the saved task and tile cache. No photo is uploaded to a server.
+
+Regression: a384px learned run was closed after2 of9 tiles. Reopening restored source/settings, reused both tiles, completed768px output, and restored the finished output after another close/reopen. Physical Android background continuation is not verified or promised.
